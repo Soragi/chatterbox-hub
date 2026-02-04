@@ -46,31 +46,59 @@ export const useChatterbox = (apiEndpoint: string): UseChatterboxReturn => {
     setError(null);
 
     try {
-      // Chatterbox API expects JSON body with specific field names
+      // Try different endpoint formats used by various Chatterbox implementations
+      const endpoints = [
+        "/audio/speech",           // travisvn/chatterbox-tts-api format
+        "/v1/audio/speech",        // OpenAI compatible format
+        "/tts",                    // Simple format
+        "/generate",               // Direct format
+      ];
+
+      // Build request body - try both 'input' and 'text' keys
       const requestBody = {
-        text: options.text,
+        input: options.text,       // OpenAI compatible
+        text: options.text,        // Chatterbox native
         exaggeration: options.exaggeration,
-        cfg: options.cfgWeight,
+        cfg_weight: options.cfgWeight,
+        cfg: options.cfgWeight,    // Some versions use 'cfg'
         temperature: options.temperature,
       };
 
-      console.log("Sending generate request to:", `${apiEndpoint}/generate`);
-      console.log("Request body:", requestBody);
-      
-      const response = await fetch(`${apiEndpoint}/generate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+      let response: Response | null = null;
+      let lastError = "";
 
-      console.log("Generate response status:", response.status, response.statusText);
+      for (const endpoint of endpoints) {
+        console.log(`Trying endpoint: ${apiEndpoint}${endpoint}`);
+        
+        try {
+          response = await fetch(`${apiEndpoint}${endpoint}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Generate error response:", errorText);
-        throw new Error(`Generation failed (${response.status}): ${errorText || response.statusText}`);
+          console.log(`${endpoint} response:`, response.status, response.statusText);
+
+          if (response.ok) {
+            console.log(`Success with endpoint: ${endpoint}`);
+            break;
+          } else if (response.status !== 404) {
+            // Not a 404, so this endpoint exists but had an error
+            const errorText = await response.text();
+            lastError = `${endpoint}: ${response.status} - ${errorText}`;
+            console.error(lastError);
+          }
+        } catch (e) {
+          console.error(`Error with ${endpoint}:`, e);
+        }
+        
+        response = null;
+      }
+
+      if (!response || !response.ok) {
+        throw new Error(lastError || "No working endpoint found. Check /docs on your backend for available endpoints.");
       }
 
       // Check content type to ensure we got audio
