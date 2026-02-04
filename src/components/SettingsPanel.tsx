@@ -73,7 +73,7 @@ const SettingsPanel = ({ apiEndpoint, onApiEndpointChange, connectionStatus }: S
             <Input
               value={tempEndpoint}
               onChange={(e) => setTempEndpoint(e.target.value)}
-              placeholder="http://localhost:8000"
+              placeholder="/api"
               className="bg-surface border-border"
             />
             <p className="text-xs text-muted-foreground">
