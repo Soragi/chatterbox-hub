@@ -5,10 +5,9 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY bun.lockb ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (using npm install since project uses bun.lockb)
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
