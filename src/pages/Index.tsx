@@ -19,7 +19,7 @@ const Index = () => {
   const [cfgWeight, setCfgWeight] = useState(0.5);
   const [temperature, setTemperature] = useState(0.8);
 
-  const { generate, audioUrl, isGenerating, error, connectionStatus, checkConnection } = useChatterbox(apiEndpoint);
+  const { generate, audioUrl, isGenerating, error, connectionStatus, checkConnection, voices } = useChatterbox(apiEndpoint);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -141,6 +141,7 @@ const Index = () => {
                 selectedVoice={selectedVoice}
                 onVoiceSelect={setSelectedVoice}
                 onUploadVoice={handleUploadVoice}
+                availableVoices={voices}
               />
             </div>
 
