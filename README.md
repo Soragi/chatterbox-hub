@@ -35,8 +35,11 @@ A modern web interface for the [Chatterbox TTS](https://github.com/resemble-ai/c
 
    This will:
    - Build the Web UI container
-   - Pull the Chatterbox TTS backend image
+   - Pull the Chatterbox TTS backend image (community image: `neosun/chatterbox-tts`)
+   - Download TTS models on first run (~2GB)
    - Start both services with proper networking
+
+   > **Note:** First startup may take 5-10 minutes to download models.
 
 3. **Access the application:**
    - **Web UI:** http://localhost:3000
