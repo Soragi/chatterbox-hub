@@ -9,7 +9,7 @@ import { useChatterbox } from "@/hooks/useChatterbox";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const [apiEndpoint, setApiEndpoint] = useState("http://localhost:8000");
+  const [apiEndpoint, setApiEndpoint] = useState("/api");
   const [text, setText] = useState("");
   const [selectedVoice, setSelectedVoice] = useState("default");
   const [referenceAudio, setReferenceAudio] = useState<File | null>(null);
