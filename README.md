@@ -19,65 +19,89 @@ A modern web interface for the [Chatterbox TTS](https://github.com/resemble-ai/c
 - [Docker](https://docs.docker.com/get-docker/) installed
 - [Docker Compose](https://docs.docker.com/compose/install/) installed
 - NVIDIA GPU with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
-- Supports both x86_64 and ARM64 (DGX Spark with Blackwell GPU)
+- Hugging Face account with API token
 
-### Deployment
+### Step 1: Build the Chatterbox Backend
 
-1. **Clone this repository:**
-   ```bash
-   git clone <YOUR_GIT_URL>
-   cd <YOUR_PROJECT_NAME>
-   ```
-
-2. **Start the services:**
-   ```bash
-   docker-compose up --build
-   ```
-
-   This will:
-   - Build the Chatterbox TTS backend from source (ARM64/x86_64 compatible)
-   - Build the Web UI container
-   - Download TTS models on first run (~2GB)
-   - Start both services with proper networking
-
-   > **Note:** First build takes 10-15 minutes. First startup downloads models (~5-10 min).
-
-3. **Access the application:**
-   - **Web UI:** http://localhost:3000
-   - **API (direct):** http://localhost:8000
-
-### Stopping the Services
+First, clone and build the official Chatterbox TTS image:
 
 ```bash
-docker-compose down
+git clone https://github.com/resemble-ai/chatterbox.git
+cd chatterbox
+docker build -t chatterbox-tts .
 ```
 
-### Running in Background (Detached Mode)
+### Step 2: Setup This Project
 
 ```bash
-docker-compose up --build -d
+git clone <YOUR_GIT_URL>
+cd <YOUR_PROJECT_NAME>
+
+# Create directories for persistence
+mkdir -p hf_cache voices
+```
+
+### Step 3: Configure Environment
+
+Create a `.env` file with your Hugging Face token:
+
+```bash
+echo "HF_TOKEN=hf_your_token_here" > .env
+```
+
+### Step 4: Start the Services
+
+```bash
+docker compose up --build
+```
+
+This will:
+- Start the Chatterbox TTS backend on port 10050
+- Build and start the Web UI on port 3000
+- Connect both services with proper networking
+
+> **Note:** First startup may take a few minutes to download models.
+
+### Step 5: Access the Application
+
+- **Web UI:** http://localhost:3000
+- **API (direct):** http://localhost:10050
+
+## Voice Cloning Setup
+
+To preload a voice for cloning:
+
+1. Place your reference audio file in `./voices/`:
+   ```bash
+   cp your_reference.wav ./voices/reference.wav
+   ```
+
+2. Update the command in `docker-compose.yml`:
+   ```yaml
+   command: python tts_api.py --port 10050 --preload-voice /workspace/audio/reference.wav
+   ```
+
+3. Restart the services:
+   ```bash
+   docker compose down && docker compose up
+   ```
+
+## Stopping the Services
+
+```bash
+docker compose down
+```
+
+## Running in Background (Detached Mode)
+
+```bash
+docker compose up --build -d
 ```
 
 View logs:
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
-
-### CPU-Only / ARM64 Mode (Apple Silicon, etc.)
-
-For systems without NVIDIA GPU or on ARM64 architecture (e.g., Apple Silicon Macs):
-
-```bash
-docker-compose -f docker-compose.cpu.yml up --build
-```
-
-This builds Chatterbox from source with CPU-only PyTorch, which:
-- Works on ARM64 (Apple Silicon) and x86_64
-- Does not require NVIDIA GPU or drivers
-- First startup takes 10-15 minutes (model download + initialization)
-- Inference is slower than GPU (expect 10-30 seconds per generation)
-
-> **Note:** The default `docker-compose.yml` requires an NVIDIA GPU with the Container Toolkit installed.
 
 ## Architecture
 
@@ -85,11 +109,11 @@ This builds Chatterbox from source with CPU-only PyTorch, which:
 ┌─────────────────┐     ┌─────────────────────┐
 │   Web Browser   │────▶│  Web UI (port 3000) │
 └─────────────────┘     └──────────┬──────────┘
-                                   │
+                                   │ /api/*
                                    ▼
                         ┌─────────────────────┐
                         │  Chatterbox Backend │
-                        │    (port 8000)      │
+                        │   (port 10050)      │
                         └─────────────────────┘
 ```
 
@@ -103,7 +127,7 @@ This builds Chatterbox from source with CPU-only PyTorch, which:
 ### Generate Speech Request
 
 ```bash
-curl -X POST http://localhost:8000/generate \
+curl -X POST http://localhost:10050/generate \
   -F "text=Hello, world!" \
   -F "exaggeration=0.5" \
   -F "cfg_weight=0.5" \
@@ -154,15 +178,19 @@ The UI will be available at http://localhost:5173
 ## Troubleshooting
 
 ### Backend not connecting
-- Ensure the Chatterbox container is healthy: `docker-compose ps`
-- Check backend logs: `docker-compose logs chatterbox`
+- Ensure the Chatterbox container is healthy: `docker compose ps`
+- Check backend logs: `docker compose logs chatterbox`
 
 ### GPU not detected
 - Verify NVIDIA drivers: `nvidia-smi`
-- Check Container Toolkit: `docker run --gpus all nvidia/cuda:11.0-base nvidia-smi`
+- Check Container Toolkit: `docker run --gpus all nvidia/cuda:12.0-base nvidia-smi`
 
 ### Port conflicts
-- Change ports in `docker-compose.yml` if 3000 or 8000 are in use
+- Change ports in `docker-compose.yml` if 3000 or 10050 are in use
+
+### HF_TOKEN errors
+- Ensure your `.env` file contains a valid Hugging Face token
+- Get a token at https://huggingface.co/settings/tokens
 
 ## License
 
