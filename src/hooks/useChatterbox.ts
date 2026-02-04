@@ -57,17 +57,33 @@ export const useChatterbox = (apiEndpoint: string): UseChatterboxReturn => {
         formData.append("reference_audio", options.referenceAudio);
       }
 
+      console.log("Sending generate request to:", `${apiEndpoint}/generate`);
+      
       const response = await fetch(`${apiEndpoint}/generate`, {
         method: "POST",
         body: formData,
       });
 
+      console.log("Generate response status:", response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`Generation failed: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error("Generate error response:", errorText);
+        throw new Error(`Generation failed (${response.status}): ${errorText || response.statusText}`);
+      }
+
+      // Check content type to ensure we got audio
+      const contentType = response.headers.get("content-type");
+      console.log("Response content-type:", contentType);
+      
+      if (contentType && contentType.includes("text/html")) {
+        throw new Error("Received HTML instead of audio - check API proxy configuration");
       }
 
       // Get the audio blob
       const audioBlob = await response.blob();
+      console.log("Received audio blob:", audioBlob.size, "bytes, type:", audioBlob.type);
+      
       const url = URL.createObjectURL(audioBlob);
       
       // Revoke previous URL if exists
@@ -76,32 +92,11 @@ export const useChatterbox = (apiEndpoint: string): UseChatterboxReturn => {
       }
       
       setAudioUrl(url);
+      setError(null);
     } catch (err) {
+      console.error("Generation error:", err);
       const message = err instanceof Error ? err.message : "An error occurred";
       setError(message);
-      
-      // For demo purposes, simulate audio generation with a sample
-      console.log("API not available, using demo mode");
-      
-      // Create a simple beep as demo audio
-      const audioContext = new AudioContext();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 440;
-      oscillator.type = "sine";
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 1);
-      
-      // In demo mode, we'll just show a message
-      setError("Demo mode: Connect a Chatterbox server to generate real speech");
     } finally {
       setIsGenerating(false);
     }
