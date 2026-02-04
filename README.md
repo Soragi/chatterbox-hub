@@ -18,7 +18,8 @@ A modern web interface for the [Chatterbox TTS](https://github.com/resemble-ai/c
 
 - [Docker](https://docs.docker.com/get-docker/) installed
 - [Docker Compose](https://docs.docker.com/compose/install/) installed
-- NVIDIA GPU with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) (for GPU acceleration)
+- NVIDIA GPU with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+- Supports both x86_64 and ARM64 (DGX Spark with Blackwell GPU)
 
 ### Deployment
 
@@ -34,12 +35,12 @@ A modern web interface for the [Chatterbox TTS](https://github.com/resemble-ai/c
    ```
 
    This will:
+   - Build the Chatterbox TTS backend from source (ARM64/x86_64 compatible)
    - Build the Web UI container
-   - Pull the Chatterbox TTS backend image (community image: `neosun/chatterbox-tts`)
    - Download TTS models on first run (~2GB)
    - Start both services with proper networking
 
-   > **Note:** First startup may take 5-10 minutes to download models.
+   > **Note:** First build takes 10-15 minutes. First startup downloads models (~5-10 min).
 
 3. **Access the application:**
    - **Web UI:** http://localhost:3000

@@ -1,9 +1,10 @@
 services:
   # Chatterbox TTS Backend
-  # Using community image since official ghcr.io image is private
-  # Alternative: build from https://github.com/resemble-ai/chatterbox
+  # Built from source for ARM64/Blackwell GPU support (DGX Spark compatible)
   chatterbox:
-    image: neosun/chatterbox-tts:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.chatterbox
     container_name: chatterbox-backend
     ports:
       - "8000:8000"
@@ -11,7 +12,8 @@ services:
       - chatterbox-models:/root/.cache/huggingface
       - ./audio:/app/audio
     environment:
-      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     deploy:
       resources:
         reservations:
@@ -24,8 +26,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 120s
+      retries: 5
+      start_period: 300s
 
   # Chatterbox Web UI
   webui:
