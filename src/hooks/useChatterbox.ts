@@ -46,18 +46,18 @@ export const useChatterbox = (apiEndpoint: string): UseChatterboxReturn => {
     setError(null);
 
     try {
-      // Chatterbox API expects JSON body
+      // Chatterbox API expects JSON body with specific field names
       const requestBody = {
         text: options.text,
         exaggeration: options.exaggeration,
-        cfg_weight: options.cfgWeight,
+        cfg: options.cfgWeight,
         temperature: options.temperature,
       };
 
-      console.log("Sending generate request to:", `${apiEndpoint}/synthesize`);
+      console.log("Sending generate request to:", `${apiEndpoint}/generate`);
       console.log("Request body:", requestBody);
       
-      const response = await fetch(`${apiEndpoint}/synthesize`, {
+      const response = await fetch(`${apiEndpoint}/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
