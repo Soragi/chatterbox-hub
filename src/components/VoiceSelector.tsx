@@ -1,58 +1,34 @@
 import { Mic, Upload, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 interface Voice {
-  id: string;
   name: string;
-  type: "default" | "custom";
-  duration?: string;
+  model_type: string;
 }
 
 interface VoiceSelectorProps {
   selectedVoice: string;
   onVoiceSelect: (voiceId: string) => void;
   onUploadVoice: (file: File) => void;
+  availableVoices: Voice[];
 }
 
-const defaultVoices: Voice[] = [
-  { id: "default", name: "Default Voice", type: "default" },
-];
-
-const VoiceSelector = ({ selectedVoice, onVoiceSelect, onUploadVoice }: VoiceSelectorProps) => {
-  const [customVoices, setCustomVoices] = useState<Voice[]>([]);
+const VoiceSelector = ({ selectedVoice, onVoiceSelect, onUploadVoice, availableVoices }: VoiceSelectorProps) => {
   const [isDragging, setIsDragging] = useState(false);
-
-  const allVoices = [...defaultVoices, ...customVoices];
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file && (file.type.includes("audio") || file.name.endsWith(".wav") || file.name.endsWith(".mp3"))) {
-      const newVoice: Voice = {
-        id: `custom-${Date.now()}`,
-        name: file.name.replace(/\.[^/.]+$/, ""),
-        type: "custom",
-        duration: "Analyzing...",
-      };
-      setCustomVoices(prev => [...prev, newVoice]);
       onUploadVoice(file);
-      onVoiceSelect(newVoice.id);
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const newVoice: Voice = {
-        id: `custom-${Date.now()}`,
-        name: file.name.replace(/\.[^/.]+$/, ""),
-        type: "custom",
-      };
-      setCustomVoices(prev => [...prev, newVoice]);
       onUploadVoice(file);
-      onVoiceSelect(newVoice.id);
     }
   };
 
@@ -63,37 +39,45 @@ const VoiceSelector = ({ selectedVoice, onVoiceSelect, onUploadVoice }: VoiceSel
       </h3>
       
       {/* Voice Grid */}
-      <div className="grid grid-cols-2 gap-3">
-        {allVoices.map((voice) => (
-          <button
-            key={voice.id}
-            onClick={() => onVoiceSelect(voice.id)}
-            className={`group relative p-4 rounded-xl border transition-all duration-300 text-left ${
-              selectedVoice === voice.id
-                ? "border-primary bg-primary/10 glow-sm"
-                : "border-border bg-card hover:border-primary/50 hover:bg-surface-elevated"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                selectedVoice === voice.id 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-secondary text-muted-foreground group-hover:bg-primary/20"
-              }`}>
-                <Mic className="w-5 h-5" />
+      <div className="grid grid-cols-1 gap-3">
+        {availableVoices.length === 0 ? (
+          <div className="p-4 rounded-xl border border-border bg-card text-center">
+            <p className="text-sm text-muted-foreground">
+              No voices available. Upload a reference audio below to create one.
+            </p>
+          </div>
+        ) : (
+          availableVoices.map((voice) => (
+            <button
+              key={voice.name}
+              onClick={() => onVoiceSelect(voice.name)}
+              className={`group relative p-4 rounded-xl border transition-all duration-300 text-left ${
+                selectedVoice === voice.name
+                  ? "border-primary bg-primary/10 glow-sm"
+                  : "border-border bg-card hover:border-primary/50 hover:bg-surface-elevated"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                  selectedVoice === voice.name 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-secondary text-muted-foreground group-hover:bg-primary/20"
+                }`}>
+                  <Mic className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">{voice.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {voice.model_type}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="font-medium text-foreground">{voice.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {voice.type === "custom" ? "Custom Voice" : "Built-in"}
-                </p>
-              </div>
-            </div>
-            {selectedVoice === voice.id && (
-              <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse-glow" />
-            )}
-          </button>
-        ))}
+              {selectedVoice === voice.name && (
+                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse-glow" />
+              )}
+            </button>
+          ))
+        )}
       </div>
 
       {/* Upload Zone */}
@@ -109,7 +93,7 @@ const VoiceSelector = ({ selectedVoice, onVoiceSelect, onUploadVoice }: VoiceSel
       >
         <input
           type="file"
-          accept="audio/*,.wav,.mp3"
+          accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a"
           onChange={handleFileInput}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
@@ -124,7 +108,7 @@ const VoiceSelector = ({ selectedVoice, onVoiceSelect, onUploadVoice }: VoiceSel
               {isDragging ? "Drop to upload" : "Upload Reference Audio"}
             </p>
             <p className="text-xs text-muted-foreground">
-              WAV or MP3 • 5-30 seconds recommended
+              WAV, MP3, OGG, FLAC, M4A • 5-30 seconds recommended
             </p>
           </div>
         </div>
