@@ -1,0 +1,36 @@
+# Dockerfile for Chatterbox TTS Backend (CPU/ARM64 compatible)
+# This builds Chatterbox from source for systems without NVIDIA GPU or on ARM64
+
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PyTorch CPU version
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install Chatterbox TTS
+RUN pip install --no-cache-dir chatterbox-tts
+
+# Install FastAPI for the API server
+RUN pip install --no-cache-dir fastapi uvicorn python-multipart
+
+# Copy the API server script
+COPY chatterbox_server.py .
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=5 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the server
+CMD ["python", "chatterbox_server.py"]

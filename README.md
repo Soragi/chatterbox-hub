@@ -62,20 +62,21 @@ View logs:
 docker-compose logs -f
 ```
 
-### CPU-Only Mode (No GPU)
+### CPU-Only / ARM64 Mode (Apple Silicon, etc.)
 
-If you don't have an NVIDIA GPU, modify `docker-compose.yml` to remove the GPU reservation:
+For systems without NVIDIA GPU or on ARM64 architecture (e.g., Apple Silicon Macs):
 
-```yaml
-# Remove or comment out this section in docker-compose.yml:
-deploy:
-  resources:
-    reservations:
-      devices:
-        - driver: nvidia
-          count: 1
-          capabilities: [gpu]
+```bash
+docker-compose -f docker-compose.cpu.yml up --build
 ```
+
+This builds Chatterbox from source with CPU-only PyTorch, which:
+- Works on ARM64 (Apple Silicon) and x86_64
+- Does not require NVIDIA GPU or drivers
+- First startup takes 10-15 minutes (model download + initialization)
+- Inference is slower than GPU (expect 10-30 seconds per generation)
+
+> **Note:** The default `docker-compose.yml` requires an NVIDIA GPU with the Container Toolkit installed.
 
 ## Architecture
 
