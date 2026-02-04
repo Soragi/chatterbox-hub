@@ -46,37 +46,24 @@ export const useChatterbox = (apiEndpoint: string): UseChatterboxReturn => {
     setError(null);
 
     try {
-      // Try to discover the correct endpoint by checking /docs or /openapi.json
-      // The Chatterbox API may use /synthesize, /tts, or /v1/audio/speech
-      const endpoints = ["/synthesize", "/tts", "/v1/audio/speech", "/generate"];
-      
-      // Create form data for the request (native Chatterbox format)
-      const formData = new FormData();
-      formData.append("text", options.text);
-      formData.append("exaggeration", options.exaggeration.toString());
-      formData.append("cfg_weight", options.cfgWeight.toString());
-      formData.append("temperature", options.temperature.toString());
-      
-      if (options.referenceAudio) {
-        formData.append("audio", options.referenceAudio);
-      }
+      // Chatterbox API expects JSON body
+      const requestBody = {
+        text: options.text,
+        exaggeration: options.exaggeration,
+        cfg_weight: options.cfgWeight,
+        temperature: options.temperature,
+      };
 
-      // Try /synthesize first (common Chatterbox endpoint)
       console.log("Sending generate request to:", `${apiEndpoint}/synthesize`);
+      console.log("Request body:", requestBody);
       
-      let response = await fetch(`${apiEndpoint}/synthesize`, {
+      const response = await fetch(`${apiEndpoint}/synthesize`, {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
       });
-
-      // If /synthesize returns 404, try /tts
-      if (response.status === 404) {
-        console.log("Trying /tts endpoint...");
-        response = await fetch(`${apiEndpoint}/tts`, {
-          method: "POST",
-          body: formData,
-        });
-      }
 
       console.log("Generate response status:", response.status, response.statusText);
 
