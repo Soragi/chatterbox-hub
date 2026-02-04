@@ -46,67 +46,33 @@ export const useChatterbox = (apiEndpoint: string): UseChatterboxReturn => {
     setError(null);
 
     try {
-      // Try different endpoint formats used by various Chatterbox implementations
-      const endpoints = [
-        "/audio/speech",           // travisvn/chatterbox-tts-api format
-        "/v1/audio/speech",        // OpenAI compatible format
-        "/tts",                    // Simple format
-        "/generate",               // Direct format
-      ];
-
-      // Build request body - try both 'input' and 'text' keys
+      // TTSRequest schema from the OpenAPI spec
       const requestBody = {
-        input: options.text,       // OpenAI compatible
-        text: options.text,        // Chatterbox native
+        text: options.text,
+        model: "turbo",
+        temperature: options.temperature,
         exaggeration: options.exaggeration,
         cfg_weight: options.cfgWeight,
-        cfg: options.cfgWeight,    // Some versions use 'cfg'
-        temperature: options.temperature,
+        output_format: "wav",
       };
 
-      let response: Response | null = null;
-      let lastError = "";
-
-      for (const endpoint of endpoints) {
-        console.log(`Trying endpoint: ${apiEndpoint}${endpoint}`);
-        
-        try {
-          response = await fetch(`${apiEndpoint}${endpoint}`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestBody),
-          });
-
-          console.log(`${endpoint} response:`, response.status, response.statusText);
-
-          if (response.ok) {
-            console.log(`Success with endpoint: ${endpoint}`);
-            break;
-          } else if (response.status !== 404) {
-            // Not a 404, so this endpoint exists but had an error
-            const errorText = await response.text();
-            lastError = `${endpoint}: ${response.status} - ${errorText}`;
-            console.error(lastError);
-          }
-        } catch (e) {
-          console.error(`Error with ${endpoint}:`, e);
-        }
-        
-        response = null;
-      }
-
-      if (!response || !response.ok) {
-        throw new Error(lastError || "No working endpoint found. Check /docs on your backend for available endpoints.");
-      }
-
-      // Check content type to ensure we got audio
-      const contentType = response.headers.get("content-type");
-      console.log("Response content-type:", contentType);
+      console.log("Sending TTS request to:", `${apiEndpoint}/tts`);
+      console.log("Request body:", requestBody);
       
-      if (contentType && contentType.includes("text/html")) {
-        throw new Error("Received HTML instead of audio - check API proxy configuration");
+      const response = await fetch(`${apiEndpoint}/tts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log("TTS response status:", response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("TTS error response:", errorText);
+        throw new Error(`Generation failed (${response.status}): ${errorText || response.statusText}`);
       }
 
       // Get the audio blob
